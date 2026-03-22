@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+
+  <!-- ─── iPhone / Safari PWA ─────────────────────────────────────── -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0,
+        maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+
+  <!-- Makes "Add to Home Screen" launch full-screen (no Safari chrome) -->
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+
+  <!-- Status bar style: "black-translucent" lets your maroon header
+       bleed into the notch / Dynamic Island area -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+
+  <!-- App name shown under the icon on the home screen -->
+  <meta name="apple-mobile-web-app-title" content="MacPark"/>
+
+  <!-- Theme colour (tints the browser toolbar on Android too) -->
+  <meta name="theme-color" content="#7A003C"/>
+
+  <title>MacPark — McMaster Parking</title>
+
+  <!-- ─── Safe-area support (notch / home-bar padding) ────────────── -->
+  <style>
+    /* Push the bottom nav above the iPhone home indicator */
+    .nav {
+      padding-bottom: calc(13px + env(safe-area-inset-bottom)) !important;
+    }
+    /* Extend the maroon header behind the status bar */
+    .hdr {
+      padding-top: calc(13px + env(safe-area-inset-top)) !important;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─────────────────────────────────────────────────────────────────
+     Original MacPark app (macpark_v0_1_2.html) — unchanged below
+──────────────────────────────────────────────────────────────────── -->
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;600&family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--mar:#7A003C;--mard:#5a002c;--marl:#9a1050;--gold:#FDBF57;--gre:#007B4B;--red:#A6192E;--blu:#007096;--bg:#18090f;--bg2:#230d17;--txt:#f5ece8;--txt2:#c4a0b0;--txt3:#7a5060}
+body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif}
+.app{max-width:430px;margin:0 auto;background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
+.hdr{background:var(--mar);padding:13px 0 11px;text-align:center;border-bottom:3px solid var(--gold)}
+.hdr-sub{font-size:10px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;font-weight:500}
+.hdr h1{font-family:'EB Garamond',serif;font-size:30px;font-weight:600;letter-spacing:4px;color:#fff;text-transform:uppercase;line-height:1.1}
+.map-wrap{position:relative;height:310px;overflow:hidden;flex-shrink:0}
+#lmap{width:100%;height:100%}
+.mui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:600}
+.mui>*{pointer-events:auto}
+.zbtn{position:absolute;top:10px;left:10px;background:var(--mar);border:2px solid var(--gold);color:#fff;border-radius:8px;padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif;display:none;align-items:center;gap:5px}
+.zbtn.on{display:flex}
+.lchip{position:absolute;top:10px;right:10px;background:var(--mar);border:1.5px solid var(--gold);border-radius:7px;padding:4px 11px;font-size:11px;font-weight:700;color:#fff;display:none;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px}
+.lchip.on{display:block}
+.mleg{position:absolute;bottom:8px;left:8px;background:rgba(24,9,15,0.9);border:1px solid rgba(253,191,87,0.3);border-radius:6px;padding:5px 9px;display:flex;gap:9px;font-size:10px;color:#f5ece8}
+.ld{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
+.load-overlay{position:absolute;inset:0;background:rgba(24,9,15,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:800}
+.spin{width:30px;height:30px;border:3px solid rgba(253,191,87,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-size:12px;color:var(--gold);font-weight:500;letter-spacing:1px;text-align:center;padding:0 20px}
+.dir-panel{background:var(--bg2);border-bottom:1px solid rgba(253,191,87,0.12);overflow:hidden;max-height:0;transition:max-height .35s ease}
+.dir-panel.on{max-height:200px}
+.dir-in{padding:10px 14px}
+.dir-ttl{font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;font-weight:600;margin-bottom:6px}
+.ds{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--txt2);margin-bottom:4px}
+.dsn{background:var(--mar);color:var(--gold);width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px}
+.ibar{background:var(--bg2);padding:8px 15px;font-size:12px;color:var(--txt2);border-bottom:1px solid rgba(255,255,255,0.05);min-height:34px}
+.ibar strong{color:#fff}
+.slbl{padding:11px 17px 4px;font-size:10px;letter-spacing:2.5px;color:var(--gold);font-weight:600;text-transform:uppercase;background:var(--bg)}
+.llist{overflow-y:auto;max-height:255px;padding:0 10px 4px}
+.lrow{display:flex;align-items:center;border-top:1px solid rgba(255,255,255,0.06);padding:11px 5px;gap:10px;cursor:pointer;border-radius:4px;transition:background .12s}
+.lrow:hover{background:rgba(253,191,87,0.04)}
+.lrow.sel{background:rgba(122,0,60,0.22);border-left:3px solid var(--gold)}
+.ldt{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.lri{flex:1;min-width:0}
+.lrn{font-size:15px;font-weight:600;color:#fff}
+.lrs{font-size:12px;color:var(--txt2);margin-top:1px}
+.bdg{font-size:10px;padding:2px 7px;border-radius:9px;display:inline-block;font-weight:500;margin-top:3px}
+.bo{background:rgba(0,123,75,0.2);color:#4dd494}
+.bl{background:rgba(166,25,46,0.22);color:#e87070}
+.bf{background:rgba(90,0,44,0.3);color:#c060a0}
+.bp{background:rgba(0,112,150,0.18);color:#7ad0f0;margin-left:3px}
+.ibtn{background:transparent;border:1.5px solid var(--gold);color:var(--gold);border-radius:16px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif;transition:all .12s;white-space:nowrap}
+.ibtn:hover{background:var(--gold);color:var(--mar)}
+.dbtn{background:var(--mar);border:1.5px solid var(--gold);color:var(--gold);border-radius:16px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif;transition:all .12s;margin-top:5px}
+.dbtn:hover{background:var(--gold);color:var(--mar)}
+.fbtn{margin:10px 12px;background:var(--gold);border:none;color:var(--mar);border-radius:26px;padding:14px;font-size:16px;font-weight:700;font-family:'Barlow Condensed',sans-serif;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s;width:calc(100% - 24px)}
+.fbtn:hover{background:#ffd07a}.fbtn:active{transform:scale(0.98)}
+.nav{background:var(--mard);border-top:2px solid var(--gold);padding:9px 0 13px;display:flex;justify-content:space-around}
+.nbtn{background:none;border:none;color:rgba(253,191,87,0.4);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-family:'Barlow',sans-serif;letter-spacing:1px;text-transform:uppercase;transition:color .15s}
+.nbtn.on{color:var(--gold)}
+.nbtn svg{width:19px;height:19px}
+.ovl{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:1000;align-items:flex-end;justify-content:center}
+.ovl.on{display:flex}
+.mdl{background:var(--bg2);border-radius:16px 16px 0 0;width:100%;max-width:430px;padding:20px 18px 26px;border-top:3px solid var(--gold);animation:sup .22s ease}
+@keyframes sup{from{transform:translateY(32px);opacity:0}to{transform:none;opacity:1}}
+.mt{font-family:'EB Garamond',serif;font-size:24px;font-weight:600;color:#fff;letter-spacing:1px}
+.mx{float:right;background:none;border:none;color:var(--txt3);font-size:20px;cursor:pointer}
+.mr_{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px}
+.ml_{color:var(--txt2)}.mv_{color:#fff;font-weight:500;text-align:right}
+.pb{height:6px;background:rgba(255,255,255,0.07);border-radius:4px;margin:10px 0 2px}
+.pbi{height:6px;border-radius:4px;transition:width .4s}
+.pp{font-size:11px;color:var(--txt3);text-align:right;margin-bottom:8px}
+.ma{display:flex;gap:7px;margin-top:12px}
+.mb_{flex:1;border:none;border-radius:22px;padding:12px;font-size:14px;font-weight:700;font-family:'Barlow Condensed',sans-serif;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.mb1{background:var(--gold);color:var(--mar)}.mb1:hover{background:#ffd07a}
+.mb2{background:var(--mar);border:1.5px solid var(--gold);color:var(--gold)}.mb2:hover{background:var(--marl)}
+.tst{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:var(--mar);border:1.5px solid var(--gold);color:#fff;border-radius:18px;padding:8px 20px;font-size:12px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .3s;z-index:2000;white-space:nowrap;max-width:92%}
+.tst.on{opacity:1}
+</style>
+
+<div class="app">
+  <div class="hdr">
+    <div class="hdr-sub">McMaster University</div>
+    <h1>MacPark</h1>
+  </div>
+  <div class="map-wrap">
+    <div id="lmap"></div>
+    <div class="mui">
+      <button class="zbtn" id="zbtn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>Campus Map</button>
+      <div class="lchip" id="lchip"></div>
+      <div class="mleg" id="mleg">
+        <span><span class="ld" style="background:#4dd494"></span>Open</span>
+        <span><span class="ld" style="background:#e87070"></span>Limited</span>
+        <span><span class="ld" style="background:#c060a0"></span>Full</span>
+      </div>
+    </div>
+    <div class="load-overlay" id="loadov">
+      <div class="spin"></div>
+      <div class="load-txt" id="loadtxt">Querying OpenStreetMap for McMaster parking lots…</div>
+    </div>
+  </div>
+  <div class="dir-panel" id="dirp"><div class="dir-in"><div class="dir-ttl">Walking Directions</div><div id="dirsteps"></div></div></div>
+  <div class="ibar" id="ibar">Tap a lot on the map or list to view details.</div>
+  <div class="slbl">Available Parking Near You</div>
+  <div class="llist" id="llist"></div>
+  <button class="fbtn" id="fbtn">Find Me A Spot</button>
+  <div class="nav">
+    <button class="nbtn on" id="nh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="nbtn" id="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>Map</button>
+    <button class="nbtn" id="na"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Alerts</button>
+  </div>
+</div>
+<div class="ovl" id="ovl"><div class="mdl"><button class="mx" id="mx">✕</button><div class="mt" id="mt"></div><div id="mbd"></div></div></div>
+<div class="tst" id="tst"></div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const META = {
+  'A': {status:'open',   spots:28,cap:45, time:'3 min', permit:'Visitor/All',           rate:'$3.50/hr',hours:'7am–10pm',
+        dirs:['Enter via Divinity College Rd off Sterling St','Lot A is at the far north end — follow signs','3 min walk south to main campus']},
+  'B': {status:'open',   spots:31,cap:90, time:'4 min', permit:'B Permit / Visitor',     rate:'$3.00/hr',hours:'Mon–Fri 7am–6pm',
+        dirs:['Enter Sterling St gate','Turn right onto Stearn Dr','Lot B is on your left — 4 min walk to MUSC']},
+  'C': {status:'open',   spots:22,cap:40, time:'5 min', permit:'Visitor Pay & Display',  rate:'$3.50/hr',hours:'7am–10pm',
+        dirs:['Enter Sterling St gate','Continue north — Lot C is on the right','3 min walk to MUSC']},
+  'D': {status:'open',   spots:19,cap:35, time:'5 min', permit:'D Permit / Visitor',     rate:'$3.00/hr',hours:'Mon–Fri 7am–6pm',
+        dirs:['Enter Sterling St gate','Lot D is adjacent to Lot C','5 min walk to Engineering buildings']},
+  'E': {status:'limited',spots:8, cap:50, time:'5 min', permit:'E Permit / Visitor',     rate:'$2.50/hr',hours:'24/7',
+        dirs:['Enter campus at Sterling St & Forsyth Ave','Turn RIGHT — Lot E is immediately on your right','5 min walk to MUSC via Stearn Dr']},
+  'G': {status:'open',   spots:37,cap:70, time:'7 min', permit:'G Permit / Visitor',     rate:'$2.00/hr',hours:'Mon–Fri 7am–8pm',
+        dirs:['Enter via College Crescent off Cootes Dr','Lot G is on your right inside the gate','7 min walk east to MUSC']},
+  'H': {status:'limited',spots:5, cap:30, time:'8 min', permit:'H Permit',               rate:'$2.50/hr',hours:'7am–9pm',
+        dirs:['Enter via Michell Crescent','Lot H is off Michell Crescent — follow signs','Pay with HonkMobile before leaving your vehicle']},
+  'I': {status:'open',   spots:14,cap:25, time:'6 min', permit:'I Permit / Visitor',     rate:'$3.00/hr',hours:'Mon–Fri 7am–6pm',
+        dirs:['Enter Sterling St gate','Follow ring road — Lot I is near the north end','6 min walk to central campus']},
+  'K': {status:'open',   spots:20,cap:40, time:'9 min', permit:'Staff/Faculty K Permit', rate:'$2.50/hr',hours:'Mon–Fri 7am–6pm',
+        dirs:['Enter via Cootes Dr west entrance','Lot K is near the northwest edge of campus','9 min walk to MUSC']},
+  'M': {status:'open',   spots:43,cap:120,time:'12 min (shuttle)',permit:'All / Pay & Display',rate:'$2.50/hr',hours:'24/7',
+        dirs:['From Forsyth Ave head west on Cootes Dr','Turn right onto Westaway Rd','Lot M on your left — take shuttle to main campus (runs 6:30am–11pm)']},
+  'N': {status:'open',   spots:25,cap:60, time:'14 min (shuttle)',permit:'Staff/Faculty', rate:'$2.00/hr',hours:'Mon–Fri 6am–10pm',
+        dirs:['Enter Westaway Rd off Cootes Dr','Lot N is south of Lot M','Take shuttle bus to main campus']},
+  'P': {status:'limited',spots:16,cap:80, time:'14 min (shuttle)',permit:'All / Pay & Display',rate:'$2.00/hr',hours:'7am–11pm',
+        dirs:['Enter Westaway Rd off Cootes Dr','Lot P is at the south end of west lots','Shuttle stop at lot entrance']},
+  'Q': {status:'open',   spots:12,cap:30, time:'3 min', permit:'Visitor Pay & Display',  rate:'$4.00/hr',hours:'7am–9pm',
+        dirs:['Enter main campus via Sterling St','Lot Q is adjacent to University Hall','3 min walk to campus core']},
+  'Stadium Underground':{status:'full',  spots:0, cap:150,time:'6 min',permit:'T Permit / Visitor',rate:'$3.00/hr',hours:'24/7',
+        dirs:['Enter via Stearn Dr off Sterling St','Follow signs to Ron Joyce Stadium','Underground entrance on west side — currently full']},
+  'Wilson Underground': {status:'limited',spots:9,cap:80, time:'5 min',permit:'All / Pay & Display',rate:'$3.50/hr',hours:'7am–10pm',
+        dirs:['Enter Sterling St gate','Follow signs to L.R. Wilson Hall','Underground entrance at north end of Wilson Hall']},
+};
+
+const USER = {lat:43.2624, lng:-79.9218};
+let map, routeLine=null, zoomedId=null, activeLayers=[], allLots=[];
+
+const sCol=s=>s==='open'?'#007B4B':s==='limited'?'#b06010':'#7A003C';
+const dCol=s=>s==='open'?'#4dd494':s==='limited'?'#e87070':'#c060a0';
+const bCls=s=>s==='open'?'bo':s==='limited'?'bl':'bf';
+const bLbl=s=>s==='open'?'Open':s==='limited'?'Limited':'Full';
+const pct=l=>l.spots&&l.cap?Math.round(l.spots/l.cap*100):0;
+
+function genSpots(lot){
+  const total=Math.min(lot.cap||20,80), taken=total-Math.min(lot.spots||0,total);
+  let st=Array(total).fill('available');
+  const seed=(lot.id||'X').charCodeAt(0);
+  Array.from({length:total},(_,i)=>i)
+    .sort((a,b)=>((a*seed*7+13)%17)-((b*seed*11+5)%17))
+    .slice(0,taken).forEach(i=>st[i]='taken');
+  return st;
+}
+
+function clearActive(){
+  activeLayers.forEach(l=>{try{map.removeLayer(l)}catch(e){}});
+  activeLayers=[];
+  if(routeLine){try{map.removeLayer(routeLine)}catch(e){}routeLine=null;}
+}
+
+function drawRoute(lot){
+  const mid=[(USER.lat+lot.lat)/2+(lot.lat>USER.lat?.0005:-.0005),(USER.lng+lot.lng)/2-.0003];
+  routeLine=L.polyline([[USER.lat,USER.lng],mid,[lot.lat,lot.lng]],
+    {color:'#FDBF57',weight:3.5,opacity:.82,dashArray:'9,6',lineCap:'round'}).addTo(map);
+}
+
+function drawSpotGrid(lot){
+  const b=lot.bounds;
+  const PAD=0.12;
+  const latMin=b.getSouth()+(b.getNorth()-b.getSouth())*PAD;
+  const latMax=b.getNorth()-(b.getNorth()-b.getSouth())*PAD;
+  const lngMin=b.getWest() +(b.getEast()-b.getWest())*PAD;
+  const lngMax=b.getEast() -(b.getEast()-b.getWest())*PAD;
+  const W=lngMax-lngMin, H=latMax-latMin;
+  const laneW=W*0.10;
+  const bankW=(W-laneW)/2;
+  const mPerLat=111000, mPerLng=77000;
+  const cols=Math.max(2,Math.floor(bankW*mPerLng/2.7));
+  const rows=Math.max(2,Math.floor(H*mPerLat/5.2));
+  const sw=bankW/cols*0.86, sh=H/rows*0.82;
+  const gL=bankW/cols*0.14, gA=H/rows*0.18;
+  const spots=lot.spotStates;
+  let bestIdx=spots.findIndex(s=>s==='available');
+  for(let bank=0;bank<2;bank++){
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const idx=Math.min(bank*rows*cols+r*cols+c,spots.length-1);
+        const state=spots[idx]||'taken';
+        const isBest=idx===bestIdx&&bank===0;
+        const cLng=bank===0?lngMin+c*(sw+gL)+sw/2:lngMin+bankW+laneW+c*(sw+gL)+sw/2;
+        const cLat=latMin+r*(sh+gA)+sh/2;
+        const corners=[[cLat-sh/2,cLng-sw/2],[cLat-sh/2,cLng+sw/2],[cLat+sh/2,cLng+sw/2],[cLat+sh/2,cLng-sw/2]];
+        const fill=isBest?'#FDBF57':state==='available'?'#007B4B':'#A6192E';
+        const p=L.polygon(corners,{
+          color:isBest?'#c8921a':state==='available'?'#004d30':'#5a1020',
+          weight:isBest?2:0.5,fillColor:fill,fillOpacity:state==='taken'?0.65:0.88,
+          interactive:state==='available'
+        }).addTo(map);
+        if(state==='available') p.on('click',()=>toast(isBest?'★ Best spot reserved!':'Spot reserved!'));
+        activeLayers.push(p);
+        if(isBest){
+          const m=L.marker([cLat,cLng],{icon:L.divIcon({className:'',
+            html:`<div style="background:#FDBF57;color:#7A003C;font-size:8px;font-weight:800;padding:2px 6px;border-radius:3px;white-space:nowrap;font-family:'Barlow Condensed',sans-serif;transform:translate(-50%,-130%)">★ BEST</div>`,
+            iconSize:[0,0],iconAnchor:[0,0]})}).addTo(map);
+          activeLayers.push(m);
+        }
+      }
+    }
+  }
+  const ol=L.polygon(lot.osmPoly,{color:'#FDBF57',weight:1.8,fillColor:'transparent',dashArray:'5,4',interactive:false}).addTo(map);
+  activeLayers.push(ol);
+  const entM=L.marker([(b.getSouth()+latMin*2)/3, (lngMin+lngMax)/2],{icon:L.divIcon({className:'',
+    html:`<div style="background:rgba(24,9,15,0.9);border:1px solid #FDBF57;color:#FDBF57;font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;font-family:Barlow,sans-serif;transform:translateX(-50%)">ENTRANCE ↑</div>`,
+    iconSize:[0,0],iconAnchor:[0,0]})}).addTo(map);
+  activeLayers.push(entM);
+}
+
+function selectLot(id){
+  zoomedId=id;
+  const lot=allLots.find(l=>l.id===id);
+  if(!lot) return;
+  document.getElementById('ibar').innerHTML=`<strong>${lot.name}</strong> — ${lot.spots>0?lot.spots+' spots':'No spots'} · ${lot.time} · ${lot.rate}`;
+  document.querySelectorAll('.lrow').forEach(r=>r.classList.toggle('sel',r.dataset.id===id));
+  document.getElementById('zbtn').classList.add('on');
+  document.getElementById('lchip').textContent=lot.name.toUpperCase();
+  document.getElementById('lchip').classList.add('on');
+  document.getElementById('mleg').innerHTML=
+    `<span><span class="ld" style="background:#007B4B"></span>Free</span>`+
+    `<span><span class="ld" style="background:#A6192E"></span>Taken</span>`+
+    `<span><span class="ld" style="background:#FDBF57"></span>Best</span>`;
+  clearActive();
+  map.flyTo([lot.lat,lot.lng],19,{duration:0.85});
+  drawSpotGrid(lot);
+  drawRoute(lot);
+  showDirs(lot);
+}
+
+function backToOverview(){
+  zoomedId=null; clearActive();
+  document.getElementById('zbtn').classList.remove('on');
+  document.getElementById('lchip').classList.remove('on');
+  document.getElementById('mleg').innerHTML=
+    `<span><span class="ld" style="background:#4dd494"></span>Open</span>`+
+    `<span><span class="ld" style="background:#e87070"></span>Limited</span>`+
+    `<span><span class="ld" style="background:#c060a0"></span>Full</span>`;
+  document.getElementById('ibar').textContent='Tap a lot on the map or list to view details.';
+  document.getElementById('dirp').classList.remove('on');
+  document.querySelectorAll('.lrow').forEach(r=>r.classList.remove('sel'));
+  map.flyTo([43.2605,-79.9270],14,{duration:0.8});
+}
+
+function showDirs(lot){
+  document.getElementById('dirsteps').innerHTML=(lot.dirs||[]).map((d,i)=>
+    `<div class="ds"><div class="dsn">${i+1}</div><div>${d}</div></div>`).join('');
+  document.getElementById('dirp').classList.add('on');
+}
+
+function buildList(){
+  const el=document.getElementById('llist'); el.innerHTML='';
+  [...allLots].sort((a,b)=>parseInt(a.time)-parseInt(b.time)).forEach(lot=>{
+    const d=document.createElement('div'); d.className='lrow'; d.dataset.id=lot.id;
+    d.innerHTML=`
+      <div class="ldt" style="background:${dCol(lot.status)}"></div>
+      <div class="lri">
+        <div class="lrn">${lot.name}</div>
+        <div class="lrs">${lot.spots>0?lot.spots+' spots available':'No spots available'}</div>
+        <span class="bdg ${bCls(lot.status)}">${bLbl(lot.status)}</span>
+        <span class="bdg bp">${lot.permit}</span>
+        <br><button class="dbtn" data-id="${lot.id}">↗ Directions</button>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;padding-right:2px">
+        <div style="font-size:11px;color:var(--txt2)">${lot.time}</div>
+        <button class="ibtn" data-id="${lot.id}">Info</button>
+      </div>`;
+    d.addEventListener('click',()=>selectLot(lot.id));
+    el.appendChild(d);
+  });
+  document.querySelectorAll('.ibtn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openModal(b.dataset.id);}));
+  document.querySelectorAll('.dbtn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();selectLot(b.dataset.id);}));
+}
+
+function openModal(id){
+  const lot=allLots.find(l=>l.id===id); if(!lot) return;
+  const bc=sCol(lot.status);
+  document.getElementById('mt').textContent=lot.name;
+  document.getElementById('mbd').innerHTML=`
+    <div class="mr_"><span class="ml_">Status</span><span class="mv_"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dCol(lot.status)};margin-right:5px;vertical-align:middle"></span>${bLbl(lot.status)}</span></div>
+    <div class="mr_"><span class="ml_">Spots</span><span class="mv_">${lot.spots} / ${lot.cap}</span></div>
+    <div class="mr_"><span class="ml_">Walk time</span><span class="mv_">${lot.time}</span></div>
+    <div class="mr_"><span class="ml_">Rate</span><span class="mv_">${lot.rate}</span></div>
+    <div class="mr_"><span class="ml_">Hours</span><span class="mv_">${lot.hours}</span></div>
+    <div class="mr_" style="border:none"><span class="ml_">Permit</span><span class="mv_">${lot.permit}</span></div>
+    <div class="pb"><div class="pbi" style="width:${pct(lot)}%;background:${bc}"></div></div>
+    <div class="pp">${pct(lot)}% available</div>
+    <div class="ma">
+      <button class="mb_ mb1" onclick="selectLot('${id}');document.getElementById('ovl').classList.remove('on')">View Spots</button>
+      <button class="mb_ mb2" onclick="selectLot('${id}');toast('Navigating to ${lot.name.replace(/'/g,"\\'")}...');document.getElementById('ovl').classList.remove('on')">Navigate</button>
+    </div>`;
+  document.getElementById('ovl').classList.add('on');
+}
+
+function toast(msg){const t=document.getElementById('tst');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2600);}
+
+async function fetchOSM(){
+  const q=`[out:json][timeout:25];
+way[amenity=parking](43.253,-79.942,43.270,-79.908);
+(._;>;);
+out body qt;`;
+  const resp=await fetch('https://overpass-api.de/api/interpreter',{
+    method:'POST',
+    body:'data='+encodeURIComponent(q)
+  });
+  return resp.json();
+}
+
+function buildLotsFromOSM(data){
+  const nodes={};
+  data.elements.forEach(el=>{if(el.type==='node') nodes[el.id]={lat:el.lat,lng:el.lon};});
+  const ways=data.elements.filter(el=>el.type==='way'&&el.tags&&el.tags.amenity==='parking');
+  ways.forEach(way=>{
+    const pts=way.nodes.map(nid=>nodes[nid]).filter(Boolean).map(n=>[n.lat,n.lng]);
+    if(pts.length<3) return;
+    const tags=way.tags||{};
+    const rawName=(tags.name||tags.ref||tags['name:en']||'').trim();
+    const rawRef=(tags.ref||'').trim().toUpperCase();
+    let metaKey=null;
+    if(rawRef&&META[rawRef]) metaKey=rawRef;
+    if(!metaKey){const m=rawName.match(/\bLot\s+([A-Z])\b/i);if(m&&META[m[1].toUpperCase()])metaKey=m[1].toUpperCase();}
+    if(!metaKey&&/stadium/i.test(rawName)) metaKey='Stadium Underground';
+    if(!metaKey&&/wilson/i.test(rawName)) metaKey='Wilson Underground';
+    if(!metaKey){const m2=rawName.match(/^([A-Z])$/);if(m2&&META[m2[1]])metaKey=m2[1];}
+    if(!metaKey) return;
+    if(allLots.find(l=>l.id===metaKey)) return;
+    const meta=META[metaKey];
+    const latArr=pts.map(p=>p[0]), lngArr=pts.map(p=>p[1]);
+    const lat=(Math.min(...latArr)+Math.max(...latArr))/2;
+    const lng=(Math.min(...lngArr)+Math.max(...lngArr))/2;
+    const bounds=L.latLngBounds(pts.map(p=>L.latLng(p[0],p[1])));
+    const spotStates=genSpots(meta);
+    const lot={id:metaKey,name:metaKey.length===1?`Lot ${metaKey}`:metaKey,lat,lng,osmPoly:pts,bounds,spotStates,...meta};
+    allLots.push(lot);
+    const col=sCol(lot.status);
+    const poly=L.polygon(pts,{color:col,weight:1.5,fillColor:col,fillOpacity:0.2,interactive:true}).addTo(map);
+    poly.on('click',()=>selectLot(lot.id));
+    const ico=L.divIcon({className:'',html:`<div style="width:28px;height:28px;border-radius:50%;background:${col};border:2.5px solid ${lot.status==='open'?'#FDBF57':'rgba(255,255,255,0.35)'};cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:800;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.5)">${metaKey.length===1?metaKey:metaKey.substring(0,3)}</div>`,iconSize:[28,28],iconAnchor:[14,14]});
+    L.marker([lat,lng],{icon:ico,zIndexOffset:500}).addTo(map).on('click',()=>selectLot(lot.id));
+  });
+}
+
+async function init(){
+  map=L.map('lmap',{zoomControl:false,attributionControl:false}).setView([43.2605,-79.9270],14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20}).addTo(map);
+  L.control.attribution({prefix:false,position:'bottomright'}).addAttribution('© <a href="https://openstreetmap.org/copyright">OSM</a>').addTo(map);
+  L.marker([USER.lat,USER.lng],{icon:L.divIcon({className:'',html:`
+    <div style="position:relative">
+      <div style="width:20px;height:20px;border-radius:50%;background:#007096;border:3px solid #fff;box-shadow:0 0 0 5px rgba(0,112,150,0.28)">
+        <div style="width:7px;height:7px;border-radius:50%;background:#fff;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></div>
+      </div>
+      <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:#007096;color:#fff;font-size:8px;font-weight:700;padding:2px 5px;border-radius:3px;white-space:nowrap;font-family:Barlow,sans-serif">YOU</div>
+    </div>`,iconSize:[20,20],iconAnchor:[10,10]}),zIndexOffset:1000}).addTo(map);
+  try{
+    document.getElementById('loadtxt').textContent='Fetching live OSM parking polygons…';
+    const data=await fetchOSM();
+    document.getElementById('loadtxt').textContent='Matching lots to McMaster records…';
+    buildLotsFromOSM(data);
+    if(allLots.length===0) throw new Error('No lots matched');
+  }catch(e){
+    console.warn('OSM fetch issue:',e);
+    document.getElementById('loadtxt').textContent='Using verified campus coordinates…';
+    const fallback=[
+      {id:'E',lat:43.26155,lng:-79.92000,w:0.00110,h:0.00055},
+      {id:'B',lat:43.26310,lng:-79.92090,w:0.00130,h:0.00060},
+      {id:'C',lat:43.26420,lng:-79.91890,w:0.00090,h:0.00050},
+      {id:'D',lat:43.26480,lng:-79.91800,w:0.00080,h:0.00048},
+      {id:'I',lat:43.26520,lng:-79.91960,w:0.00075,h:0.00045},
+      {id:'Q',lat:43.26220,lng:-79.91840,w:0.00070,h:0.00045},
+      {id:'A',lat:43.25970,lng:-79.91720,w:0.00085,h:0.00050},
+      {id:'G',lat:43.26060,lng:-79.92520,w:0.00100,h:0.00058},
+      {id:'H',lat:43.26190,lng:-79.92480,w:0.00070,h:0.00042},
+      {id:'K',lat:43.26310,lng:-79.92680,w:0.00095,h:0.00055},
+      {id:'M',lat:43.25760,lng:-79.93440,w:0.00160,h:0.00075},
+      {id:'N',lat:43.25690,lng:-79.93410,w:0.00110,h:0.00060},
+      {id:'P',lat:43.25630,lng:-79.93380,w:0.00100,h:0.00055},
+    ];
+    fallback.forEach(fb=>{
+      const meta=META[fb.id]; if(!meta) return;
+      const latMin=fb.lat-fb.h/2,latMax=fb.lat+fb.h/2,lngMin=fb.lng-fb.w/2,lngMax=fb.lng+fb.w/2;
+      const pts=[[latMin,lngMin],[latMin,lngMax],[latMax,lngMax],[latMax,lngMin]];
+      const bounds=L.latLngBounds(pts.map(p=>L.latLng(p[0],p[1])));
+      const lot={id:fb.id,name:`Lot ${fb.id}`,lat:fb.lat,lng:fb.lng,osmPoly:pts,bounds,spotStates:genSpots(meta),...meta};
+      allLots.push(lot);
+      const col=sCol(lot.status);
+      const poly=L.polygon(pts,{color:col,weight:1.5,fillColor:col,fillOpacity:0.2,interactive:true}).addTo(map);
+      poly.on('click',()=>selectLot(lot.id));
+      const ico=L.divIcon({className:'',html:`<div style="width:28px;height:28px;border-radius:50%;background:${col};border:2.5px solid ${lot.status==='open'?'#FDBF57':'rgba(255,255,255,0.35)'};cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:800;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.5)">${fb.id}</div>`,iconSize:[28,28],iconAnchor:[14,14]});
+      L.marker([fb.lat,fb.lng],{icon:ico,zIndexOffset:500}).addTo(map).on('click',()=>selectLot(lot.id));
+    });
+  }
+  allLots.sort((a,b)=>parseInt(a.time)-parseInt(b.time));
+  buildList();
+  document.getElementById('loadov').style.display='none';
+}
+
+document.getElementById('zbtn').addEventListener('click',backToOverview);
+document.getElementById('mx').addEventListener('click',()=>document.getElementById('ovl').classList.remove('on'));
+document.getElementById('ovl').addEventListener('click',e=>{if(e.target===document.getElementById('ovl'))document.getElementById('ovl').classList.remove('on');});
+document.getElementById('fbtn').addEventListener('click',()=>{
+  const best=allLots.filter(l=>l.status!=='full').sort((a,b)=>parseInt(a.time)-parseInt(b.time))[0];
+  if(best){selectLot(best.id);openModal(best.id);}else toast('No spots available right now.');
+});
+['nh','nm','na'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',()=>{
+    document.querySelectorAll('.nbtn').forEach(b=>b.classList.remove('on'));
+    document.getElementById(id).classList.add('on');
+    if(id==='nh'&&zoomedId)backToOverview();
+    if(id==='nm'){if(zoomedId)backToOverview();else{const b=allLots.find(l=>l.status!=='full');if(b)selectLot(b.id);}}
+    if(id==='na')toast('No active alerts for McMaster campus.');
+  });
+});
+
+init();
+</script>
+
+</body>
+</html>
