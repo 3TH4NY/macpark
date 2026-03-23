@@ -194,6 +194,7 @@ const META = {
 // Live user location — updated by GPS; falls back to McMaster MUSC
 let USER = {lat:43.2624, lng:-79.9218};
 let userMarker = null;
+let navigating = false;   // true when user tapped Navigate — map follows the user
 let map, routeLine=null, zoomedId=null, activeLayers=[], allLots=[];
 
 function updateUserMarker(lat, lng) {
@@ -211,7 +212,17 @@ function updateUserMarker(lat, lng) {
   } else {
     userMarker = L.marker([lat, lng], {icon, zIndexOffset:1000}).addTo(map);
   }
-  if (zoomedId) {
+
+  if (navigating && zoomedId) {
+    // Re-draw route from new position
+    const lot = allLots.find(l => l.id === zoomedId);
+    if (lot) {
+      drawRoute(lot);
+      // Keep map centred on user at navigation zoom
+      map.panTo([lat, lng], {animate:true, duration:0.5});
+    }
+  } else if (zoomedId) {
+    // Not navigating — just silently update the route line
     const lot = allLots.find(l => l.id === zoomedId);
     if (lot) drawRoute(lot);
   }
@@ -222,8 +233,61 @@ function startGPS() {
   navigator.geolocation.watchPosition(
     pos => updateUserMarker(pos.coords.latitude, pos.coords.longitude),
     err => console.warn('GPS unavailable, using default', err),
-    {enableHighAccuracy:true, maximumAge:5000, timeout:10000}
+    {enableHighAccuracy:true, maximumAge:3000, timeout:10000}
   );
+}
+
+// Called by the Navigate button — zooms to show user + lot, then follows user
+async function navigateToLot(id) {
+  navigating = true;
+  document.getElementById('ovl').classList.remove('on');
+
+  // Make sure the lot is selected (draws spots + route)
+  await selectLot(id);
+
+  // Fit map to show BOTH user position and the lot
+  const lot = allLots.find(l => l.id === id);
+  if (lot) {
+    const bounds = L.latLngBounds(
+      [USER.lat, USER.lng],
+      [lot.lat, lot.lng]
+    ).pad(0.25);
+    map.flyToBounds(bounds, {duration:0.9, maxZoom:17});
+  }
+
+  // Show a persistent nav banner
+  showNavBanner(lot);
+  toast('Navigating to ' + (lot ? lot.name : id) + ' — follow the gold line');
+}
+
+function showNavBanner(lot) {
+  let banner = document.getElementById('nav-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'nav-banner';
+    banner.style.cssText = `
+      position:fixed;top:0;left:0;width:100%;z-index:900;
+      background:var(--mar);border-bottom:2px solid var(--gold);
+      display:flex;align-items:center;justify-content:space-between;
+      padding:10px 14px;font-family:Barlow,sans-serif;font-size:13px;color:#fff;
+      padding-top:calc(10px + env(safe-area-inset-top));
+    `;
+    document.body.appendChild(banner);
+  }
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FDBF57" stroke-width="2.5"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+      <span>Navigating to <strong>${lot ? lot.name : ''}</strong></span>
+    </div>
+    <button onclick="stopNavigation()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;font-family:Barlow,sans-serif;cursor:pointer">End</button>
+  `;
+}
+
+function stopNavigation() {
+  navigating = false;
+  const banner = document.getElementById('nav-banner');
+  if (banner) banner.remove();
+  backToOverview();
 }
 
 const sCol=s=>s==='open'?'#007B4B':s==='limited'?'#b06010':'#7A003C';
@@ -383,6 +447,9 @@ async function selectLot(id){
 }
 
 function backToOverview(){
+  navigating = false;
+  const banner = document.getElementById('nav-banner');
+  if (banner) banner.remove();
   zoomedId=null; clearActive();
   document.getElementById('zbtn').classList.remove('on');
   document.getElementById('lchip').classList.remove('on');
@@ -441,7 +508,7 @@ function openModal(id){
     <div class="pp">${pct(lot)}% available</div>
     <div class="ma">
       <button class="mb_ mb1" onclick="selectLot('${id}');document.getElementById('ovl').classList.remove('on')">View Spots</button>
-      <button class="mb_ mb2" onclick="selectLot('${id}');toast('Navigating to ${lot.name.replace(/'/g,"\\'")}...');document.getElementById('ovl').classList.remove('on')">Navigate</button>
+      <button class="mb_ mb2" onclick="navigateToLot('${id}')">Navigate</button>
     </div>`;
   document.getElementById('ovl').classList.add('on');
 }
