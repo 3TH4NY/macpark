@@ -154,40 +154,77 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const META = {
-  'A': {status:'open',   spots:28,cap:45, time:'3 min', permit:'Visitor/All',           rate:'$3.50/hr',hours:'7am–10pm',
+  // Rates from parking.mcmaster.ca (2024–25):
+  // Lots A,B,C,D,G,H,I,Q,Stadium,Wilson: $6/hr, $20 max (Mon–Fri); $8 flat evenings & weekends
+  // Lots M,P: $8 flat weekdays; $4 flat evenings & weekends
+  // Lot K: staff permit only — no daily rate posted
+  // Lot N: staff permit only — no daily rate posted
+  'A': {status:'open',   spots:28,cap:45, time:'3 min', permit:'Visitor / All',              rate:'$6/hr · $20 max',hours:'Mon–Fri 6:30am–midnight',
         dirs:['Enter via Divinity College Rd off Sterling St','Lot A is at the far north end — follow signs','3 min walk south to main campus']},
-  'B': {status:'open',   spots:31,cap:90, time:'4 min', permit:'B Permit / Visitor',     rate:'$3.00/hr',hours:'Mon–Fri 7am–6pm',
+  'B': {status:'open',   spots:31,cap:90, time:'4 min', permit:'Student / Staff / Visitor',  rate:'$6/hr · $20 max',hours:'Mon–Fri 6:30am–midnight',
         dirs:['Enter Sterling St gate','Turn right onto Stearn Dr','Lot B is on your left — 4 min walk to MUSC']},
-  'C': {status:'open',   spots:22,cap:40, time:'5 min', permit:'Visitor Pay & Display',  rate:'$3.50/hr',hours:'7am–10pm',
+  'C': {status:'open',   spots:22,cap:40, time:'5 min', permit:'Student / Staff / Visitor',  rate:'$6/hr · $20 max',hours:'Mon–Fri 6:30am–midnight',
         dirs:['Enter Sterling St gate','Continue north — Lot C is on the right','3 min walk to MUSC']},
-  'D': {status:'open',   spots:19,cap:35, time:'5 min', permit:'D Permit / Visitor',     rate:'$3.00/hr',hours:'Mon–Fri 7am–6pm',
+  'D': {status:'open',   spots:19,cap:35, time:'5 min', permit:'Student / Staff / Visitor',  rate:'$6/hr · $20 max',hours:'Mon–Fri 6:30am–midnight',
         dirs:['Enter Sterling St gate','Lot D is adjacent to Lot C','5 min walk to Engineering buildings']},
-  'E': {status:'limited',spots:8, cap:50, time:'5 min', permit:'E Permit / Visitor',     rate:'$2.50/hr',hours:'24/7',
+  'E': {status:'limited',spots:8, cap:50, time:'5 min', permit:'Student / Staff / Visitor',  rate:'$6/hr · $20 max',hours:'Mon–Fri 6:30am–midnight',
         dirs:['Enter campus at Sterling St & Forsyth Ave','Turn RIGHT — Lot E is immediately on your right','5 min walk to MUSC via Stearn Dr']},
-  'G': {status:'open',   spots:37,cap:70, time:'7 min', permit:'G Permit / Visitor',     rate:'$2.00/hr',hours:'Mon–Fri 7am–8pm',
+  'G': {status:'open',   spots:37,cap:70, time:'7 min', permit:'Student / Staff / Visitor',  rate:'$6/hr · $20 max',hours:'Mon–Fri 6:30am–midnight',
         dirs:['Enter via College Crescent off Cootes Dr','Lot G is on your right inside the gate','7 min walk east to MUSC']},
-  'H': {status:'limited',spots:5, cap:30, time:'8 min', permit:'H Permit',               rate:'$2.50/hr',hours:'7am–9pm',
+  'H': {status:'limited',spots:5, cap:30, time:'8 min', permit:'Student / Staff / Visitor',  rate:'$6/hr · $20 max',hours:'Mon–Fri 6:30am–midnight',
         dirs:['Enter via Michell Crescent','Lot H is off Michell Crescent — follow signs','Pay with HonkMobile before leaving your vehicle']},
-  'I': {status:'open',   spots:14,cap:25, time:'6 min', permit:'I Permit / Visitor',     rate:'$3.00/hr',hours:'Mon–Fri 7am–6pm',
+  'I': {status:'open',   spots:14,cap:25, time:'6 min', permit:'Student / Staff / Visitor',  rate:'$6/hr · $20 max',hours:'Mon–Fri 6:30am–midnight',
         dirs:['Enter Sterling St gate','Follow ring road — Lot I is near the north end','6 min walk to central campus']},
-  'K': {status:'open',   spots:20,cap:40, time:'9 min', permit:'Staff/Faculty K Permit', rate:'$2.50/hr',hours:'Mon–Fri 7am–6pm',
+  'K': {status:'open',   spots:20,cap:40, time:'9 min', permit:'Staff / Faculty permit only',rate:'Permit only',    hours:'Mon–Fri 7am–6pm',
         dirs:['Enter via Cootes Dr west entrance','Lot K is near the northwest edge of campus','9 min walk to MUSC']},
-  'M': {status:'open',   spots:43,cap:120,time:'12 min (shuttle)',permit:'All / Pay & Display',rate:'$2.50/hr',hours:'24/7',
+  'M': {status:'open',   spots:43,cap:120,time:'12 min (shuttle)',permit:'Student / All',     rate:'$8 flat weekdays · $4 flat eves/wknd',hours:'24/7',
         dirs:['From Forsyth Ave head west on Cootes Dr','Turn right onto Westaway Rd','Lot M on your left — take shuttle to main campus (runs 6:30am–11pm)']},
-  'N': {status:'open',   spots:25,cap:60, time:'14 min (shuttle)',permit:'Staff/Faculty', rate:'$2.00/hr',hours:'Mon–Fri 6am–10pm',
+  'N': {status:'open',   spots:25,cap:60, time:'14 min (shuttle)',permit:'Staff / Faculty only',rate:'Permit only', hours:'Mon–Fri 6am–10pm',
         dirs:['Enter Westaway Rd off Cootes Dr','Lot N is south of Lot M','Take shuttle bus to main campus']},
-  'P': {status:'limited',spots:16,cap:80, time:'14 min (shuttle)',permit:'All / Pay & Display',rate:'$2.00/hr',hours:'7am–11pm',
+  'P': {status:'limited',spots:16,cap:80, time:'14 min (shuttle)',permit:'Student / All',     rate:'$8 flat weekdays · $4 flat eves/wknd',hours:'24/7',
         dirs:['Enter Westaway Rd off Cootes Dr','Lot P is at the south end of west lots','Shuttle stop at lot entrance']},
-  'Q': {status:'open',   spots:12,cap:30, time:'3 min', permit:'Visitor Pay & Display',  rate:'$4.00/hr',hours:'7am–9pm',
+  'Q': {status:'open',   spots:12,cap:30, time:'3 min', permit:'Student / Staff / Visitor',  rate:'$6/hr · $20 max',hours:'Mon–Sun 6:30am–midnight',
         dirs:['Enter main campus via Sterling St','Lot Q is adjacent to University Hall','3 min walk to campus core']},
-  'Stadium Underground':{status:'full',  spots:0, cap:150,time:'6 min',permit:'T Permit / Visitor',rate:'$3.00/hr',hours:'24/7',
+  'Stadium Underground':{status:'full',  spots:0, cap:150,time:'6 min',permit:'Student / Staff / Visitor',rate:'$6/hr · $20 max',hours:'24/7',
         dirs:['Enter via Stearn Dr off Sterling St','Follow signs to Ron Joyce Stadium','Underground entrance on west side — currently full']},
-  'Wilson Underground': {status:'limited',spots:9,cap:80, time:'5 min',permit:'All / Pay & Display',rate:'$3.50/hr',hours:'7am–10pm',
+  'Wilson Underground': {status:'limited',spots:9,cap:80, time:'5 min',permit:'Student / Staff / Visitor',rate:'$6/hr · $20 max',hours:'7am–10pm',
         dirs:['Enter Sterling St gate','Follow signs to L.R. Wilson Hall','Underground entrance at north end of Wilson Hall']},
 };
 
-const USER = {lat:43.2624, lng:-79.9218};
+// Live user location — updated by GPS; falls back to McMaster MUSC
+let USER = {lat:43.2624, lng:-79.9218};
+let userMarker = null;
 let map, routeLine=null, zoomedId=null, activeLayers=[], allLots=[];
+
+function updateUserMarker(lat, lng) {
+  USER = {lat, lng};
+  const html = `
+    <div style="position:relative">
+      <div style="width:20px;height:20px;border-radius:50%;background:#007096;border:3px solid #fff;box-shadow:0 0 0 6px rgba(0,112,150,0.25)">
+        <div style="width:7px;height:7px;border-radius:50%;background:#fff;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></div>
+      </div>
+      <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:#007096;color:#fff;font-size:8px;font-weight:700;padding:2px 5px;border-radius:3px;white-space:nowrap;font-family:Barlow,sans-serif">YOU</div>
+    </div>`;
+  const icon = L.divIcon({className:'',html,iconSize:[20,20],iconAnchor:[10,10]});
+  if (userMarker) {
+    userMarker.setLatLng([lat, lng]);
+  } else {
+    userMarker = L.marker([lat, lng], {icon, zIndexOffset:1000}).addTo(map);
+  }
+  if (zoomedId) {
+    const lot = allLots.find(l => l.id === zoomedId);
+    if (lot) drawRoute(lot);
+  }
+}
+
+function startGPS() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.watchPosition(
+    pos => updateUserMarker(pos.coords.latitude, pos.coords.longitude),
+    err => console.warn('GPS unavailable, using default', err),
+    {enableHighAccuracy:true, maximumAge:5000, timeout:10000}
+  );
+}
 
 const sCol=s=>s==='open'?'#007B4B':s==='limited'?'#b06010':'#7A003C';
 const dCol=s=>s==='open'?'#4dd494':s==='limited'?'#e87070':'#c060a0';
@@ -211,10 +248,67 @@ function clearActive(){
   if(routeLine){try{map.removeLayer(routeLine)}catch(e){}routeLine=null;}
 }
 
-function drawRoute(lot){
-  const mid=[(USER.lat+lot.lat)/2+(lot.lat>USER.lat?.0005:-.0005),(USER.lng+lot.lng)/2-.0003];
-  routeLine=L.polyline([[USER.lat,USER.lng],mid,[lot.lat,lot.lng]],
-    {color:'#FDBF57',weight:3.5,opacity:.82,dashArray:'9,6',lineCap:'round'}).addTo(map);
+async function drawRoute(lot) {
+  // Remove old route
+  if (routeLine) { try { map.removeLayer(routeLine); } catch(e){} routeLine = null; }
+
+  const url = `https://router.project-osrm.org/route/v1/foot/` +
+    `${USER.lng},${USER.lat};${lot.lng},${lot.lat}` +
+    `?overview=full&geometries=geojson&steps=true`;
+
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (data.code !== 'Ok' || !data.routes.length) throw new Error('no route');
+
+    const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+    routeLine = L.polyline(coords, {
+      color:'#FDBF57', weight:4, opacity:0.88, lineCap:'round', lineJoin:'round'
+    }).addTo(map);
+
+    // Add turn-arrow markers every ~8 coords so the path direction is clear
+    const step = Math.max(1, Math.floor(coords.length / 8));
+    for (let i = step; i < coords.length - 1; i += step) {
+      const a = coords[i-1], b = coords[i];
+      const angle = Math.atan2(b[1]-a[1], b[0]-a[0]) * 180 / Math.PI;
+      const arrow = L.marker(b, {
+        icon: L.divIcon({className:'',
+          html:`<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid #FDBF57;transform:rotate(${angle-90}deg);transform-origin:center;opacity:0.9"></div>`,
+          iconSize:[10,9], iconAnchor:[5,4]}),
+        interactive: false, zIndexOffset: 200
+      }).addTo(map);
+      activeLayers.push(arrow);
+    }
+
+    // Update direction steps from OSRM
+    const steps = data.routes[0].legs[0].steps;
+    if (steps && steps.length) {
+      const filtered = steps
+        .filter(s => s.maneuver.type !== 'depart' || steps.indexOf(s) === 0)
+        .slice(0, 6);
+      document.getElementById('dirsteps').innerHTML = filtered.map((s, i) => {
+        const dist = s.distance < 50 ? `${Math.round(s.distance)}m` : `${Math.round(s.distance/10)*10}m`;
+        const name = s.name || s.ref || '';
+        const type = s.maneuver.type;
+        const mod  = s.maneuver.modifier || '';
+        let instr = '';
+        if (type === 'depart')       instr = `Head ${mod} ${name ? 'on '+name : ''}`;
+        else if (type === 'arrive')  instr = `Arrive at ${lot.name}`;
+        else if (type === 'turn')    instr = `Turn ${mod}${name ? ' onto '+name : ''}`;
+        else if (type === 'continue')instr = `Continue${name ? ' on '+name : ''}`;
+        else if (type === 'roundabout') instr = `Take the roundabout`;
+        else instr = `${type.charAt(0).toUpperCase()+type.slice(1)}${name?' onto '+name:''}`;
+        return `<div class="ds"><div class="dsn">${i+1}</div><div>${instr.trim()} <span style="color:var(--gold);font-size:10px">(${dist})</span></div></div>`;
+      }).join('');
+    }
+
+  } catch(e) {
+    // Fallback: straight dashed line
+    console.warn('OSRM routing failed, using straight line', e);
+    const mid = [(USER.lat+lot.lat)/2+(lot.lat>USER.lat?.0005:-.0005),(USER.lng+lot.lng)/2-.0003];
+    routeLine = L.polyline([[USER.lat,USER.lng],mid,[lot.lat,lot.lng]],
+      {color:'#FDBF57',weight:3.5,opacity:.82,dashArray:'9,6',lineCap:'round'}).addTo(map);
+  }
 }
 
 function drawSpotGrid(lot){
@@ -268,7 +362,7 @@ function drawSpotGrid(lot){
   activeLayers.push(entM);
 }
 
-function selectLot(id){
+async function selectLot(id){
   zoomedId=id;
   const lot=allLots.find(l=>l.id===id);
   if(!lot) return;
@@ -284,7 +378,7 @@ function selectLot(id){
   clearActive();
   map.flyTo([lot.lat,lot.lng],19,{duration:0.85});
   drawSpotGrid(lot);
-  drawRoute(lot);
+  await drawRoute(lot);
   showDirs(lot);
 }
 
@@ -404,13 +498,9 @@ async function init(){
   map=L.map('lmap',{zoomControl:false,attributionControl:false}).setView([43.2605,-79.9270],14);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20}).addTo(map);
   L.control.attribution({prefix:false,position:'bottomright'}).addAttribution('© <a href="https://openstreetmap.org/copyright">OSM</a>').addTo(map);
-  L.marker([USER.lat,USER.lng],{icon:L.divIcon({className:'',html:`
-    <div style="position:relative">
-      <div style="width:20px;height:20px;border-radius:50%;background:#007096;border:3px solid #fff;box-shadow:0 0 0 5px rgba(0,112,150,0.28)">
-        <div style="width:7px;height:7px;border-radius:50%;background:#fff;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></div>
-      </div>
-      <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:#007096;color:#fff;font-size:8px;font-weight:700;padding:2px 5px;border-radius:3px;white-space:nowrap;font-family:Barlow,sans-serif">YOU</div>
-    </div>`,iconSize:[20,20],iconAnchor:[10,10]}),zIndexOffset:1000}).addTo(map);
+  // Place default marker immediately, then start GPS watch
+  updateUserMarker(USER.lat, USER.lng);
+  startGPS();
   try{
     document.getElementById('loadtxt').textContent='Fetching live OSM parking polygons…';
     const data=await fetchOSM();
