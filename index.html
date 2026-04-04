@@ -6,7 +6,7 @@
   <!-- ─── iPhone / Safari PWA ─────────────────────────────────────── -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0,
         maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://overpass-api.de https://router.project-osrm.org https://*.tile.openstreetmap.org;">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com; img-src 'self' https://*.tile.openstreetmap.org; connect-src https://overpass-api.de https://router.project-osrm.org https://*.tile.openstreetmap.org;">
 
   <!-- Makes "Add to Home Screen" launch full-screen (no Safari chrome) -->
   <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -530,16 +530,26 @@ function openModal(id){
 function toast(msg){const t=document.getElementById('tst');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2600);}
 
 async function fetchOSM(){
-  const q=`[out:json][timeout:25];
+ const q=`[out:json][timeout:25];
 way[amenity=parking](43.253,-79.942,43.270,-79.908);
-(._;>;);
-out body qt;`;
-  const resp=await fetch('https://overpass-api.de/api/interpreter',{
-    method:'POST',
+ (._;>;);
+ out body qt;`;
+ const controller=new AbortController();
+ const timeoutId=setTimeout(()=>controller.abort(),30000);
+ try{
+ const resp=await fetch('https://overpass-api.de/api/interpreter',{
+ method:'POST',
  headers:{'User-Agent':'MacPark/1.0 (McMaster Parking App)'},
-    body:'data='+encodeURIComponent(q)
-  });
-  return resp.json();
+ body:'data='+encodeURIComponent(q),
+ signal:controller.signal
+ });
+ clearTimeout(timeoutId);
+ if(!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+ return resp.json();
+ }catch(e){
+ clearTimeout(timeoutId);
+ throw e;
+ }
 }
 
 function buildLotsFromOSM(data){
@@ -620,10 +630,11 @@ async function init(){
       const ico=L.divIcon({className:'',html:`<div style="width:28px;height:28px;border-radius:50%;background:${col};border:2.5px solid ${lot.status==='open'?'#FDBF57':'rgba(255,255,255,0.35)'};cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:800;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.5)">${fb.id}</div>`,iconSize:[28,28],iconAnchor:[14,14]});
       L.marker([fb.lat,fb.lng],{icon:ico,zIndexOffset:500}).addTo(map).on('click',()=>selectLot(lot.id));
     });
-  }
+  }finally{
   allLots.sort((a,b)=>parseInt(a.time)-parseInt(b.time));
   buildList();
   document.getElementById('loadov').style.display='none';
+ }
 }
 
 document.getElementById('zbtn').addEventListener('click',backToOverview);
@@ -644,7 +655,11 @@ document.getElementById('fbtn').addEventListener('click',()=>{
   });
 });
 
-init();
+init().catch(e=>{
+console.error('Init failed:',e);
+document.getElementById('loadov').style.display='none';
+toast('Failed to load parking data.');
+});
 </script>
 
 </body>
