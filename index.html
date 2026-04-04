@@ -261,15 +261,14 @@ async function navigateToLot(id) {
   // Make sure the lot is selected (draws spots + route)
   await selectLot(id);
 
-  // Center on user marker
  const lot = allLots.find(l => l.id === id);
- map.flyTo([USER.lat, USER.lng], 17, {duration: 0.8});
+ const bounds = L.latLngBounds([[USER.lat, USER.lng], [lot.lat, lot.lng]]).pad(0.3);
+ map.fitBounds(bounds, {duration: 0.8, maxZoom: 17});
 
-  // Show a persistent nav banner
-  showNavBanner(lot);
   toast('Navigating to ' + (lot ? lot.name : id) + ' — follow the gold line');
-}
 
+ showNavBanner(lot);
+ }
 function showNavBanner(lot) {
   let banner = document.getElementById('nav-banner');
   if (!banner) {
@@ -335,6 +334,7 @@ async function drawRoute(lot) {
     `${USER.lng},${USER.lat};${lot.lng},${lot.lat}` +
     `?overview=full&geometries=geojson&steps=true`;
 
+ let routeSuccessful = false; // Track if OSRM routing succeeded
   try {
     const controller = new AbortController();
  const timeoutId = setTimeout(() => controller.abort(), 20000);
@@ -512,7 +512,7 @@ function buildList(){
     el.appendChild(d);
   });
   document.querySelectorAll('.ibtn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const lot=allLots.find(l=>l.id===b.dataset.id);if(lot){openModal(lot.id);map.flyTo([lot.lat, lot.lng], 17, {duration: 0.8});}}));
-  document.querySelectorAll('.dbtn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const lot=allLots.find(l=>l.id===b.dataset.id);if(lot){selectLot(lot.id);map.flyTo([USER.lat, USER.lng], 17, {duration: 0.8});}}));
+  document.querySelectorAll('.dbtn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const lot=allLots.find(l=>l.id===b.dataset.id);if(lot){selectLot(lot.id);const bounds=L.latLngBounds([[USER.lat,USER.lng],[lot.lat,lot.lng]]);map.fitBounds(bounds,{padding:[50,50],maxZoom:17});}}));
 }
 
 function openModal(id){
