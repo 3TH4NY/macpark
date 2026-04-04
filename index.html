@@ -261,15 +261,9 @@ async function navigateToLot(id) {
   // Make sure the lot is selected (draws spots + route)
   await selectLot(id);
 
-  // Fit map to show BOTH user position and the lot
-  const lot = allLots.find(l => l.id === id);
-  if (lot) {
-    const bounds = L.latLngBounds(
-      [USER.lat, USER.lng],
-      [lot.lat, lot.lng]
-    ).pad(0.25);
-    map.flyToBounds(bounds, {duration:0.9, maxZoom:17});
-  }
+  // Center on user marker
+ const lot = allLots.find(l => l.id === id);
+ map.flyTo([USER.lat, USER.lng], 17, {duration: 0.8});
 
   // Show a persistent nav banner
   showNavBanner(lot);
@@ -301,10 +295,14 @@ function showNavBanner(lot) {
 }
 
 function stopNavigation() {
-  navigating = false;
-  const banner = document.getElementById('nav-banner');
-  if (banner) banner.remove();
-  backToOverview();
+ navigating = false;
+ const banner = document.getElementById('nav-banner');
+ if (banner) banner.remove();
+ // Clear all route lines
+ if (routeLine) { try { map.removeLayer(routeLine); } catch(e){} routeLine = null; }
+ activeLayers.forEach(l=>{try{map.removeLayer(l)}catch(e){}});
+ activeLayers = [];
+ backToOverview();
 }
 
 const sCol=s=>s==='open'?'#007B4B':s==='limited'?'#b06010':'#7A003C';
@@ -344,6 +342,7 @@ async function drawRoute(lot) {
  clearTimeout(timeoutId);
     const data = await resp.json();
     if (data.code !== 'Ok' || !data.routes.length) throw new Error('no route');
+ routeSuccessful = true;
 
     const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
     routeLine = L.polyline(coords, {
@@ -391,7 +390,8 @@ async function drawRoute(lot) {
     // console.warn('OSRM routing failed, using straight line', e);
     const mid = [(USER.lat+lot.lat)/2+(lot.lat>USER.lat?.0005:-.0005),(USER.lng+lot.lng)/2-.0003];
  console.warn("Routing unavailable:", e.message);
-    routeLine = L.polyline([[USER.lat,USER.lng],mid,[lot.lat,lot.lng]],
+    if (!routeSuccessful) {
+ routeLine = L.polyline([[USER.lat,USER.lng],mid,[lot.lat,lot.lng]],
       {color:'#FDBF57',weight:3.5,opacity:.82,dashArray:'9,6',lineCap:'round'}).addTo(map);
   }
 }
@@ -510,8 +510,8 @@ function buildList(){
     d.addEventListener('click',()=>selectLot(lot.id));
     el.appendChild(d);
   });
-  document.querySelectorAll('.ibtn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openModal(b.dataset.id);}));
-  document.querySelectorAll('.dbtn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();selectLot(b.dataset.id);}));
+  document.querySelectorAll('.ibtn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const lot=allLots.find(l=>l.id===b.dataset.id);if(lot){openModal(lot.id);map.flyTo([lot.lat, lot.lng], 17, {duration: 0.8});}}));
+  document.querySelectorAll('.dbtn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const lot=allLots.find(l=>l.id===b.dataset.id);if(lot){selectLot(lot.id);map.flyTo([USER.lat, USER.lng], 17, {duration: 0.8});}}));
 }
 
 function openModal(id){
@@ -650,7 +650,7 @@ document.getElementById('ovl').addEventListener('click',e=>{if(e.target===docume
 document.getElementById('fbtn').addEventListener('click',()=>{
    startGPS();
  const best=allLots.filter(l=>l.status!=='full').sort((a,b)=>parseInt(a.time)-parseInt(b.time))[0];
-  if(best){selectLot(best.id);openModal(best.id);}else toast('No spots available right now.');
+  if(best){selectLot(best.id);openModal(best.id);map.flyTo([best.lat, best.lng], 17, {duration: 0.8});}else toast('No spots available right now.');
 });
 ['nh','nm','na'].forEach(id=>{
   document.getElementById(id).addEventListener('click',()=>{
