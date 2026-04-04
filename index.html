@@ -231,15 +231,26 @@ function updateUserMarker(lat, lng) {
 }
 
 function startGPS() {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.watchPosition(
-    pos => updateUserMarker(pos.coords.latitude, pos.coords.longitude),
-    err => {
- console.warn('GPS unavailable, using default', err);
- toast('GPS unavailable. Showing default location.');
+ if (!navigator.geolocation) {
+toast('Geolocation not supported');
+return;
+ }
+ if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+toast('GPS requires HTTPS. Please use https://3th4ny.github.io/macpark/');
+return;
+ }
+ navigator.geolocation.watchPosition(
+ pos => updateUserMarker(pos.coords.latitude, pos.coords.longitude),
+ err => {
+console.warn('GPS error:', err.code, err.message);
+let msg = 'Location unavailable';
+if(err.code === 1) msg = 'Permission denied. Allow location access.';
+else if(err.code === 2) msg = 'Position unavailable';
+else if(err.code === 3) msg = 'Location timeout';
+toast(msg);
  },
-    {enableHighAccuracy:true, maximumAge:3000, timeout:10000}
-  );
+ {enableHighAccuracy:true, maximumAge:3000, timeout:10000}
+ );
 }
 
 // Called by the Navigate button — zooms to show user + lot, then follows user
