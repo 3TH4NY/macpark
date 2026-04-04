@@ -599,7 +599,7 @@ async function init(){
   L.control.attribution({prefix:false,position:'bottomright'}).addAttribution('© <a href="https://openstreetmap.org/copyright">OSM</a>').addTo(map);
   // Place default marker immediately, then start GPS watch
   updateUserMarker(USER.lat, USER.lng);
-  // GPS starts on first button click
+ startGPS(); // Start live GPS tracking immediately
   try{
     document.getElementById('loadtxt').textContent='Fetching live OSM parking polygons…';
     const data=await fetchOSM();
