@@ -530,7 +530,7 @@ function openModal(id){
     <div class="pp">${pct(lot)}% available</div>
     <div class="ma">
       <button class="mb_ mb1" onclick="selectLot('${id}');document.getElementById('ovl').classList.remove('on')">View Spots</button>
-      <button class="mb_ mb2" onclick="navigateToLot('${id}')">Navigate</button>
+      <button class="mb_ mb2" onclick="startGPS();navigateToLot('${id}')">Navigate</button>
     </div>`;
   document.getElementById('ovl').classList.add('on');
 }
@@ -600,7 +600,7 @@ async function init(){
   L.control.attribution({prefix:false,position:'bottomright'}).addAttribution('© <a href="https://openstreetmap.org/copyright">OSM</a>').addTo(map);
   // Place default marker immediately, then start GPS watch
   updateUserMarker(USER.lat, USER.lng);
- startGPS(); // Start live GPS tracking immediately
+ // GPS will be requested when user interacts with navigation features
   try{
     document.getElementById('loadtxt').textContent='Fetching live OSM parking polygons…';
     const data=await fetchOSM();
