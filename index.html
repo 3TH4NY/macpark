@@ -339,7 +339,7 @@ async function drawRoute(lot) {
 
   try {
     const controller = new AbortController();
- const timeoutId = setTimeout(() => controller.abort(), 8000);
+ const timeoutId = setTimeout(() => controller.abort(), 20000);
  const resp = await fetch(url, { signal: controller.signal });
  clearTimeout(timeoutId);
     const data = await resp.json();
@@ -390,7 +390,7 @@ async function drawRoute(lot) {
     // Fallback: straight dashed line
     // console.warn('OSRM routing failed, using straight line', e);
     const mid = [(USER.lat+lot.lat)/2+(lot.lat>USER.lat?.0005:-.0005),(USER.lng+lot.lng)/2-.0003];
- console.warn('Routing service unavailable'); if (!lot.routeToastShown) { toast('Using simplified route'); lot.routeToastShown = true; }
+ console.warn("Routing unavailable:", e.message);
     routeLine = L.polyline([[USER.lat,USER.lng],mid,[lot.lat,lot.lng]],
       {color:'#FDBF57',weight:3.5,opacity:.82,dashArray:'9,6',lineCap:'round'}).addTo(map);
   }
