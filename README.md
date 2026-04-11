@@ -5,7 +5,7 @@ Interactive parking map for McMaster University campus.
 ## Features
 
 - **Interactive Map** - OpenStreetMap with parking lot locations
-- **GPS Navigation** - Walking directions to parking lots
+- **GPS Navigation** - Driving directions to parking lots
 - **PWA Ready** - Install on mobile devices
 - **Smart Suggestions** - Find the best available spot
 
@@ -39,7 +39,7 @@ Go to Actions → "Deploy to GitHub Pages" → "Run workflow"
 ## Tech Stack
 
 - **Frontend**: Vanilla JS, Leaflet.js, OpenStreetMap
-- **Routing**: OSRM API (walking directions)
+- **Routing**: OSRM API (driving directions)
 - **Hosting**: GitHub Pages (free)
 
 ## Project Structure

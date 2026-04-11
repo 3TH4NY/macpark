@@ -133,7 +133,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif}
       <div class="load-txt" id="loadtxt">Querying OpenStreetMap for McMaster parking lots…</div>
     </div>
   </div>
-  <div class="dir-panel" id="dirp"><div class="dir-in"><div class="dir-ttl">Walking Directions</div><div id="dirsteps"></div></div></div>
+  <div class="dir-panel" id="dirp"><div class="dir-in"><div class="dir-ttl">Driving Directions</div><div id="dirsteps"></div></div></div>
   <div class="ibar" id="ibar">Tap a lot on the map or list to view details.</div>
   <div class="slbl">Available Parking Near You</div>
   <div class="llist" id="llist"></div>
@@ -298,7 +298,7 @@ function stopNavigation() {
  const banner = document.getElementById('nav-banner');
  if (banner) banner.remove();
  // Clear all route lines
- if (routeLine) { try { map.removeLayer(routeLine); } catch(e){} routeLine = null; }
+ clearActive();
  activeLayers.forEach(l=>{try{map.removeLayer(l)}catch(e){}});
  activeLayers = [];
  backToOverview();
@@ -327,10 +327,10 @@ function clearActive(){
 }
 
 async function drawRoute(lot) {
-  // Remove old route
-  if (routeLine) { try { map.removeLayer(routeLine); } catch(e){} routeLine = null; }
+  // Clear any existing route lines and arrow markers
+  clearActive();
 
-  const url = `https://router.project-osrm.org/route/v1/foot/` +
+  const url = `https://router.project-osrm.org/route/v1/driving/` +
     `${USER.lng},${USER.lat};${lot.lng},${lot.lat}` +
     `?overview=full&geometries=geojson&steps=true`;
 
@@ -346,8 +346,24 @@ async function drawRoute(lot) {
 
     const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
     routeLine = L.polyline(coords, {
-      color:'#FDBF57', weight:4, opacity:0.88, lineCap:'round', lineJoin:'round'
+      color:'#FDBF57', weight:5, opacity:0.95, lineCap:'round', lineJoin:'round'
     }).addTo(map);
+
+ // Add "FASTEST ROUTE" label at the start of the path
+ if (coords.length > 0) {
+ const startCoord = coords[0];
+ const fastestLabel = L.marker(startCoord, {
+ icon: L.divIcon({
+ className: '',
+ html: `<div style="background:#7A003C;color:#FDBF57;font-size:9px;font-weight:800;padding:3px 8px;border-radius:4px;white-space:nowrap;font-family:'Barlow Condensed',sans-serif;box-shadow:0 2px 4px rgba(0,0,0,0.3);transform:translate(-50%,-180%)">★ FASTEST ROUTE</div>`,
+ iconSize: [100, 20],
+ iconAnchor: [50, 20]
+ }),
+ interactive: false,
+ zIndexOffset: 300
+ }).addTo(map);
+ activeLayers.push(fastestLabel);
+ }
 
     // Add turn-arrow markers every ~8 coords so the path direction is clear
     const step = Math.max(1, Math.floor(coords.length / 8));
