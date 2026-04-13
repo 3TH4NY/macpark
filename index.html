@@ -192,7 +192,7 @@ const META = {
 let USER = {lat:43.2624, lng:-79.9218};
 let userMarker = null;
 let navigating = false;   // true when user tapped Navigate — map follows the user
-let map, routeLine=null, zoomedId=null, activeLayers=[], allLots=[];
+let map, routeLine=null, zoomedId=null, activeLayers=[], allLots=[], routeGeneration=0;
 
 let lastPanTime = 0;
 function updateUserMarker(lat, lng) {
@@ -329,6 +329,8 @@ function clearActive(){
 async function drawRoute(lot) {
   // Clear any existing route lines and arrow markers
   clearActive();
+ // Increment generation to invalidate any pending route requests
+ const myGeneration = ++routeGeneration;
 
   const url = `https://router.project-osrm.org/route/v1/driving/` +
     `${USER.lng},${USER.lat};${lot.lng},${lot.lat}` +
@@ -340,6 +342,8 @@ async function drawRoute(lot) {
  const timeoutId = setTimeout(() => controller.abort(), 20000);
  const resp = await fetch(url, { signal: controller.signal });
  clearTimeout(timeoutId);
+ // Abort if a newer route request has since started
+ if (myGeneration !== routeGeneration) return;
     const data = await resp.json();
     if (data.code !== 'Ok' || !data.routes.length) throw new Error('no route');
  routeSuccessful = true;
