@@ -192,7 +192,7 @@ const META = {
 let USER = {lat:43.2624, lng:-79.9218};
 let userMarker = null;
 let navigating = false;   // true when user tapped Navigate — map follows the user
-let map, routeLine=null, zoomedId=null, activeLayers=[], allLots=[], routeGeneration=0;
+let map, routeLine=null, zoomedId=null, activeLayers=[], allLots=[], routeGeneration=0, skipRouteRedraw=false;
 
 let lastPanTime = 0;
 function updateUserMarker(lat, lng) {
@@ -225,8 +225,10 @@ function updateUserMarker(lat, lng) {
     }
   } else if (zoomedId) {
     // Not navigating — just silently update the route line
-    const lot = allLots.find(l => l.id === zoomedId);
-    if (lot) drawRoute(lot);
+    if (!skipRouteRedraw) {
+      const lot = allLots.find(l => l.id === zoomedId);
+      if (lot) drawRoute(lot);
+    }
   }
 }
 
@@ -484,7 +486,9 @@ async function selectLot(id){
   clearActive();
   map.flyTo([lot.lat,lot.lng],19,{duration:0.85});
   drawSpotGrid(lot);
+ skipRouteRedraw = true;
   await drawRoute(lot);
+ skipRouteRedraw = false;
   showDirs(lot);
 }
 
