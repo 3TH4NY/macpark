@@ -428,54 +428,73 @@ async function drawRoute(lot) {
 }
 
 function drawSpotGrid(lot){
-  const b=lot.bounds;
-  const PAD=0.12;
-  const latMin=b.getSouth()+(b.getNorth()-b.getSouth())*PAD;
-  const latMax=b.getNorth()-(b.getNorth()-b.getSouth())*PAD;
-  const lngMin=b.getWest() +(b.getEast()-b.getWest())*PAD;
-  const lngMax=b.getEast() -(b.getEast()-b.getWest())*PAD;
-  const W=lngMax-lngMin, H=latMax-latMin;
-  const laneW=W*0.10;
-  const bankW=(W-laneW)/2;
-  const mPerLat=111000, mPerLng=77000;
-  const cols=Math.max(2,Math.floor(bankW*mPerLng/2.7));
-  const rows=Math.max(2,Math.floor(H*mPerLat/5.2));
-  const sw=bankW/cols*0.86, sh=H/rows*0.82;
-  const gL=bankW/cols*0.14, gA=H/rows*0.18;
-  const spots=lot.spotStates;
-  let bestIdx=spots.findIndex(s=>s==='available');
-  for(let bank=0;bank<2;bank++){
-    for(let r=0;r<rows;r++){
-      for(let c=0;c<cols;c++){
-        const idx=Math.min(bank*rows*cols+r*cols+c,spots.length-1);
-        const state=spots[idx]||'taken';
-        const isBest=idx===bestIdx&&bank===0;
-        const cLng=bank===0?lngMin+c*(sw+gL)+sw/2:lngMin+bankW+laneW+c*(sw+gL)+sw/2;
-        const cLat=latMin+r*(sh+gA)+sh/2;
-        const corners=[[cLat-sh/2,cLng-sw/2],[cLat-sh/2,cLng+sw/2],[cLat+sh/2,cLng+sw/2],[cLat+sh/2,cLng-sw/2]];
-        const fill=isBest?'#FDBF57':state==='available'?'#007B4B':'#A6192E';
-        const p=L.polygon(corners,{
-          color:isBest?'#c8921a':state==='available'?'#004d30':'#5a1020',
-          weight:isBest?2:0.5,fillColor:fill,fillOpacity:state==='taken'?0.65:0.88,
-          interactive:state==='available'
-        }).addTo(map);
-        if(state==='available') p.on('click',()=>toast(isBest?'★ Best spot reserved!':'Spot reserved!'));
-        activeLayers.push(p);
-        if(isBest){
-          const m=L.marker([cLat,cLng],{icon:L.divIcon({className:'',
-            html:`<div style="background:#FDBF57;color:#7A003C;font-size:8px;font-weight:800;padding:2px 6px;border-radius:3px;white-space:nowrap;font-family:'Barlow Condensed',sans-serif;transform:translate(-50%,-130%)">★ BEST</div>`,
-            iconSize:[0,0],iconAnchor:[0,0]})}).addTo(map);
-          activeLayers.push(m);
-        }
-      }
-    }
-  }
-  const ol=L.polygon(lot.osmPoly,{color:'#FDBF57',weight:1.8,fillColor:'transparent',dashArray:'5,4',interactive:false}).addTo(map);
-  activeLayers.push(ol);
-  const entM=L.marker([(b.getSouth()+latMin*2)/3, (lngMin+lngMax)/2],{icon:L.divIcon({className:'',
-    html:`<div style="background:rgba(24,9,15,0.9);border:1px solid #FDBF57;color:#FDBF57;font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;font-family:Barlow,sans-serif;transform:translateX(-50%)">ENTRANCE ↑</div>`,
-    iconSize:[0,0],iconAnchor:[0,0]})}).addTo(map);
-  activeLayers.push(entM);
+const b=lot.bounds;
+const PAD=0.08;
+const latMin=b.getSouth()+(b.getNorth()-b.getSouth())*PAD;
+const latMax=b.getNorth()-(b.getNorth()-b.getSouth())*PAD;
+const lngMin=b.getWest()+(b.getEast()-b.getWest())*PAD;
+const lngMax=b.getEast()-(b.getEast()-b.getWest())*PAD;
+const W=lngMax-lngMin, H=latMax-latMin;
+const mPerLat=111000, mPerLng=77000;
+const lotWidthM=W*mPerLng;
+const lotHeightM=H*mPerLat;
+const spotWidthM=2.7, spotDepthM=5.2;
+const cols=Math.max(2,Math.floor(lotWidthM/spotWidthM));
+const rows=Math.max(2,Math.floor(lotHeightM/spotDepthM));
+const spotW=W/cols*0.85;
+const spotH=H/rows*0.80;
+const gapX=W/cols*0.15;
+const gapY=H/rows*0.20;
+const spots=lot.spotStates;
+let bestIdx=spots.findIndex(s=>s==='available');
+let spotCount=0;
+for(let r=0;r<rows;r++){
+for(let c=0;c<cols;c++){
+const cLng=lngMin+c*(spotW+gapX)+spotW/2;
+const cLat=latMin+r*(spotH+gapY)+spotH/2;
+const isInside=isPointInPolygon([cLat,cLng],lot.osmPoly);
+if(!isInside) continue;
+const idx=Math.min(spotCount++,spots.length-1);
+const state=spots[idx]||'taken';
+const isBest=idx===bestIdx;
+const corners=[[cLat-spotH/2,cLng-spotW/2],[cLat-spotH/2,cLng+spotW/2],[cLat+spotH/2,cLng+spotW/2],[cLat+spotH/2,cLng-spotW/2]];
+const fill=isBest?'#FDBF57':state==='available'?'#007B4B':'#A6192E';
+const p=L.polygon(corners,{
+color:isBest?'#c8921a':state==='available'?'#004d30':'#5a1020',
+weight:isBest?2:0.5,fillColor:fill,fillOpacity:state==='taken'?0.65:0.88,
+interactive:state==='available'
+}).addTo(map);
+if(state==='available') p.on('click',()=>toast(isBest?'★ Best spot reserved!':'Spot reserved!'));
+activeLayers.push(p);
+if(isBest){
+const m=L.marker([cLat,cLng],{icon:L.divIcon({className:'',
+html:`<div style="background:#FDBF57;color:#7A003C;font-size:8px;font-weight:800;padding:2px 6px;border-radius:3px;white-space:nowrap;font-family:'Barlow Condensed',sans-serif;transform:translate(-50%,-130%)">★ BEST</div>`,
+iconSize:[0,0],iconAnchor:[0,0]})}).addTo(map);
+activeLayers.push(m);
+}
+}
+}
+const ol=L.polygon(lot.osmPoly,{color:'#FDBF57',weight:2,fillColor:'transparent',dashArray:'5,4',interactive:false}).addTo(map);
+activeLayers.push(ol);
+const entM=L.marker([(b.getSouth()+latMin*2)/3,(lngMin+lngMax)/2],{icon:L.divIcon({className:'',
+html:`<div style="background:rgba(24,9,15,0.9);border:1px solid #FDBF57;color:#FDBF57;font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;font-family:Barlow,sans-serif;transform:translateX(-50%)">ENTRANCE ↑</div>`,
+iconSize:[0,0],iconAnchor:[0,0]})}).addTo(map);
+activeLayers.push(entM);
+}
+
+// Helper: check if point is inside polygon (ray casting algorithm)
+function isPointInPolygon(point, polygon) {
+const [lat, lng] = point;
+let inside = false;
+for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+const [piLat, piLng] = polygon[i];
+const [pjLat, pjLng] = polygon[j];
+if (((piLng > lng) !== (pjLng > lng)) &&
+(lat < (pjLat - piLat) * (lng - piLng) / (pjLng - piLng) + piLat)) {
+inside = !inside;
+}
+}
+return inside;
 }
 
 async function selectLot(id){
