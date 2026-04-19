@@ -255,7 +255,7 @@ toast(msg);
  );
 }
 
-// Called by the Navigate button — zooms to show user + lot, then follows user
+// Called by the Navigate button -- enables continuous GPS tracking
 async function navigateToLot(id) {
   navigating = true;
   document.getElementById('ovl').classList.remove('on');
@@ -264,13 +264,20 @@ async function navigateToLot(id) {
   await selectLot(id);
 
  const lot = allLots.find(l => l.id === id);
- const bounds = L.latLngBounds([[USER.lat, USER.lng], [lot.lat, lot.lng]]).pad(0.3);
- map.fitBounds(bounds, {duration: 0.8, maxZoom: 17});
+  if (!lot) return;
 
-  toast('Navigating to ' + (lot ? lot.name : id) + ' — follow the gold line');
+  // Show navigation banner
+  showNavBanner(lot);
 
- showNavBanner(lot);
- }
+  // Center on user location to start navigation mode
+  // updateUserMarker handles continuous following when navigating=true
+  if (userMarker) {
+    map.panTo([USER.lat, USER.lng], {animate: true, duration: 0.5});
+  }
+
+  toast('Navigation started -- map follows your location');
+}
+
 function showNavBanner(lot) {
   let banner = document.getElementById('nav-banner');
   if (!banner) {
@@ -323,9 +330,9 @@ function genSpots(lot){
 }
 
 function clearActive(){
-  activeLayers.forEach(l=>{try{map.removeLayer(l)}catch(e){}});
-  activeLayers=[];
-  if(routeLine){try{map.removeLayer(routeLine)}catch(e){}routeLine=null;}
+ if(routeLine){try{map.removeLayer(routeLine)}catch(e){}routeLine=null;}
+ activeLayers.forEach(l=>{try{map.removeLayer(l)}catch(e){}});
+ activeLayers=[];
 }
 
 async function drawRoute(lot) {
@@ -351,6 +358,7 @@ async function drawRoute(lot) {
  routeSuccessful = true;
 
     const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+ if (myGeneration !== routeGeneration) return;
     routeLine = L.polyline(coords, {
       color:'#FDBF57', weight:5, opacity:0.95, lineCap:'round', lineJoin:'round'
     }).addTo(map);
