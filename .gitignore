@@ -2,6 +2,7 @@
 .knowledge/
 # Dependencies
 node_modules/
+graphify-out/
 
 # Logs
 *.log
